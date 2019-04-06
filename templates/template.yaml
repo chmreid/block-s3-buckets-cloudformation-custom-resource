@@ -1,6 +1,47 @@
 Transform: AWS::Serverless-2016-10-31
 
+Parameters:
+	S3ControlPolicyName:
+		Type: String
+		Default: lambda-policy-s3control
+	S3ControlRoleName:
+		Type: String
+		Default: lambda-role-s3control
+	S3ControlRolePath:
+		Type: String
+	CustomFunctionOutputKeyName:
+		Type: String
+		Default: custom-resource-block-public-s3-buckets
+
 Resources:
+  PolicyS3Control:
+	Type: AWS::IAM::Policy
+	Properties:
+		PolicyDocument:
+	        - Version: 2012-10-17
+	          Statement:
+	            - Effect: Allow
+	              Action:
+	                - s3:GetAccountPublicAccessBlock
+	                - s3:PutAccountPublicAccessBlock
+	              Resource: "*"
+		PolicyName: !Ref S3ControlPolicyName
+  RoleS3Control:
+	Type: AWS::IAM::Role
+	Properties:
+		AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: !Ref S3ControlRolePath
+      Policies:
+        - !Ref PolicyS3Control
+	  RoleName: !Ref S3ControlRoleName
   BlockPublicS3BucketsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -12,16 +53,12 @@ Resources:
         Variables:
           ACCOUNT_ID: !Ref AWS::AccountId
       Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - s3:GetAccountPublicAccessBlock
-                - s3:PutAccountPublicAccessBlock
-              Resource: "*"
+		- !Ref PolicyS3Control
+	  Role:
+		- !Ref RoleS3Control
 
 Outputs:
   BlockPublicS3BucketsFunction:
     Value: !GetAtt "BlockPublicS3BucketsFunction.Arn"
     Export:
-      Name: "custom-resource-block-public-s3-buckets"
+      Name: !Ref CustomFunctionOutputKeyName
