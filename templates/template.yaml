@@ -5,17 +5,34 @@ Description: >-
     public S3 blocking permissions.
 
 Parameters:
-	S3ControlPolicyName:
-		Type: String
-		Default: lambda-policy-s3control
-	S3ControlRoleName:
-		Type: String
-		Default: lambda-role-s3control
-	S3ControlRolePath:
-		Type: String
-	CustomFunctionOutputKeyName:
-		Type: String
-		Default: custom-resource-block-public-s3-buckets
+    S3ControlPolicyName:
+        Type: String
+    S3ControlRoleName:
+        Type: String
+    S3ControlRolePath:
+        Type: String
+    CustomFunctionOutputKeyName:
+        Type: String
+    BlockPublicAcls:
+        Type: String
+        AllowedValues:
+            - True
+            - False
+    IgnorePublicAcls:
+        Type: String
+        AllowedValues:
+            - True
+            - False
+    BlockPublicPolicy:
+        Type: String
+        AllowedValues:
+            - True
+            - False
+    RestrictPublicBuckets:
+        Type: String
+        AllowedValues:
+            - True
+            - False
 
 Resources:
   PolicyS3Control:
