@@ -35,48 +35,49 @@ Parameters:
             - False
 
 Resources:
-  PolicyS3Control:
-	Type: AWS::IAM::Policy
-	Properties:
-		PolicyDocument:
-	        - Version: 2012-10-17
-	          Statement:
-	            - Effect: Allow
-	              Action:
-	                - s3:GetAccountPublicAccessBlock
-	                - s3:PutAccountPublicAccessBlock
-	              Resource: "*"
-		PolicyName: !Ref S3ControlPolicyName
-  RoleS3Control:
-	Type: AWS::IAM::Role
-	Properties:
-		AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: !Ref S3ControlRolePath
-      Policies:
-        - !Ref PolicyS3Control
-	  RoleName: !Ref S3ControlRoleName
-  BlockPublicS3BucketsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../pkg/
-      Handler: publicbuckets.handler
-      Runtime: python3.6
-      Timeout: 5
-      Environment:
-        Variables:
-          ACCOUNT_ID: !Ref AWS::AccountId
-      Policies:
-		- !Ref PolicyS3Control
-	  Role:
-		- !Ref RoleS3Control
+    RoleS3Control:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Ref S3ControlRoleName
+            AssumeRolePolicyDocument:
+                Version: 2012-10-17
+                Statement:
+                    -
+                        Effect: Allow
+                        Principal:
+                            Service:
+                                - lambda.amazonaws.com
+                        Action:
+                            - sts:AssumeRole
+            Path: !Ref S3ControlRolePath
+            Policies:
+                -
+                    PolicyName: !Ref S3ControlPolicyName
+                    PolicyDocument:
+                        Version: 2012-10-17
+                        Statement:
+                            -
+                                Effect: Allow
+                                Action:
+                                    - s3:GetAccountPublicAccessBlock
+                                    - s3:PutAccountPublicAccessBlock
+                                Resource: "*"
+
+    BlockPublicS3BucketsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: ../pkg/
+            Handler: publicbuckets.handler
+            Runtime: python3.6
+            Timeout: 5
+            Environment:
+                Variables:
+                    ACCOUNT_ID: !Ref AWS::AccountId
+                    BPA: !Ref BlockPublicAcls
+                    IPA: !Ref IgnorePublicAcls
+                    BPP: !Ref BlockPublicPolicy
+                    RPB: !Ref RestrictPublicBuckets
+            Role: !GetAtt RoleS3Control.Arn
 
 Outputs:
   BlockPublicS3BucketsFunction:
