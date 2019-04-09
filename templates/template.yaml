@@ -1,4 +1,8 @@
+AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
+Description: >-
+    This template effectively defines the lambda to be used by in applying the
+    public S3 blocking permissions.
 
 Parameters:
 	S3ControlPolicyName:
