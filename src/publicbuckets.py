@@ -11,10 +11,10 @@ def handle(event, context):
     client.put_public_access_block(
         AccountId=os.environ['ACCOUNT_ID'],
         PublicAccessBlockConfiguration={
-            'BlockPublicAcls': True,
-            'IgnorePublicAcls': True,
-            'BlockPublicPolicy': True,
-            'RestrictPublicBuckets': True
+            'BlockPublicAcls': eval(os.environ['BPA']
+            'IgnorePublicAcls': eval(os.environ['IPA']
+            'BlockPublicPolicy': eval(os.environ['BPP']
+            'RestrictPublicBuckets': eval(os.environ['RPB']
         }
     )
 
