@@ -1,5 +1,15 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+    This template will use the lambda custom function to apply the S3 public
+    bucket controls to an account.
+
+Parameters:
+    CustomFunctionOutputKeyName:
+        Type: String
+
 Resources:
-  BlockPublicS3Buckets:
-    Type: "Custom::BlockPublicS3Buckets"
-    Properties:
-      ServiceToken: !ImportValue "custom-resource-block-public-s3-buckets"
+    BlockPublicS3Buckets:
+        Type: Custom::BlockPublicS3Buckets
+        Properties:
+            ServiceToken:
+                Fn::ImportValue: !Ref CustomFunctionOutputKeyName
