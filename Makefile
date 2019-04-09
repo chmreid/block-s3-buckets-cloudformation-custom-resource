@@ -1,68 +1,93 @@
-all: deploy-stack
-.PHONY: clean build build-lambda deploy deploy-stack destroy-stack
+all: deploy
+.PHONY: clean build deploy destroy-stack
 
 clean:
 	-rm -rf pkg requirements.txt Pipfile.lock templates/packaged.yaml
-
-build: build-lambda
-deploy: deploy-stack
 
 requirements.txt:
 	@echo 'Building requirements list...'
 	@pipenv install
 	@pipenv lock -r > requirements.txt
 
-pkg: requirements.txt
+pkg/: requirements.txt templates/template.yaml
 	@echo 'Building lambda package from requirements and source...'
 	@pip install -r requirements.txt -t pkg/
 	@cp src/publicbuckets.py pkg/
 
-templates/packaged.yaml: pkg
+# Magic sauce
+profile =
+ifneq ($(origin AWS_DEFAULT_PROFILE), undefined)
+	profile = --profile $(AWS_DEFAULT_PROFILE)
+endif
+s3bucket =
+ifneq ($(origin S3_BUCKET), undefined)
+	s3bucket = $(S3_BUCKET)
+endif
+lambdastackname = security-lambda-s3control
+ifneq ($(origin LAMBDA_STACK_NAME), undefined)
+	lambdastackname = $(LAMBDA_STACK_NAME)
+endif
+cfnstackname = security-s3control
+ifneq ($(origin CFN_STACK_NAME), undefined)
+	cfnstackname = $(CFN_STACK_NAME)
+endif
+s3controlpolicyname = lambda-policy-s3control
+ifneq ($(origin S3_CONTROL_POLICY_NAME), undefined)
+	s3controlpolicyname = $(S3_CONTROL_POLICY_NAME)
+endif
+s3controlrolename = lambda-role-s3control
+ifneq ($(origin S3_CONTROL_ROLE_NAME), undefined)
+	s3controlrolename = $(S3_CONTROL_ROLE_NAME)
+endif
+s3controlrolepath = /
+ifneq ($(origin S3_CONTROL_ROLE_PATH), undefined)
+	s3controlrolepath = $(S3_CONTROL_ROLE_PATH)
+endif
+customfunctionoutputkeyname = custom-resource-block-public-s3-buckets
+ifneq ($(origin CUSTOM_FUNCTION_OUTPUT_KEY_NAME), undefined)
+	customfunctionoutputkeyname = $(CUSTOM_FUNCTION_OUTPUT_KEY_NAME)
+endif
+bpa = True
+ifneq ($(origin bpa), undefined)
+	bpa = $(BLOCK_PUBLIC_ACLS)
+endif
+ipa = True
+ifneq ($(origin ipa), undefined)
+	ipa = $(IGNORE_PUBLIC_ACLS)
+endif
+bpp = True
+ifneq ($(origin bpp), undefined)
+	bpp = $(BLOCK_PUBLIC_POLICY)
+endif
+rpb = True
+ifneq ($(origin rpb), undefined)
+	rpb = $(RESTRICT_PUBLIC_BUCKETS)
+endif
+parameteroverrides = 'S3ControlPolicyName=$(s3controlpolicyname)' \
+	'S3ControlRoleName=$(s3controlrolename)' \
+	'S3ControlRolePath=$(s3controlrolepath)' \
+	'CustomFunctionOutputKeyName=$(customfunctionoutputkeyname)' \
+	'BlockPublicAcls'=$(bpa)' \
+	'IgnorePublicAcls'=$(ipa)' \
+	'BlockPublicPolicy'=$(bpp)' \
+	'RestrictPublicBuckets'=$(rpb)'
+
+templates/packaged.yaml: pkg/
 	@echo 'Attempting to compile cloudformation from template...'
-ifdef AWS_DEFAULT_PROFILE
-ifdef S3_BUCKET
-	@aws --profile $(AWS_DEFAULT_PROFILE) cloudformation package --template-file templates/template.yaml --output-template-file templates/packaged.yaml --s3-bucket $(S3_BUCKET)
-else
-	@aws cloudformation package --template-file templates/template.yaml --output-template-file templates/packaged.yaml --s3-bucket $(S3_BUCKET)
-endif
-endif
+	aws $(profile) cloudformation package --template-file templates/template.yaml --output-template-file templates/packaged.yaml --s3-bucket $(s3bucket)
 
-build-lambda: templates/packaged.yaml
+build: templates/packaged.yaml
 
-deploy-stack: build-lambda
-ifdef AWS_DEFAULT_PROFILE
-ifdef LAMBDA_STACK_NAME
-ifdef CFN_STACK_NAME
-	@echo "Attempting to deploy compiled cloudformation to $(AWS_DEFAULT_PROFILE)..."
-	@aws --profile $(AWS_DEFAULT_PROFILE) cloudformation deploy --template-file templates/packaged.yaml --stack-name $(LAMBDA_STACK_NAME) --capabilities CAPABILITY_IAM
-	@aws --profile $(AWS_DEFAULT_PROFILE) cloudformation deploy --template-file templates/stack.yaml --stack-name $(CFN_STACK_NAME)
-else
-	@echo 'Attempting to deploy compiled cloudformation to AWS account...'
-	@aws cloudformation deploy --template-file templates/packaged.yaml --stack-name $(LAMBDA_STACK_NAME) --capabilities CAPABILITY_IAM
-	@aws cloudformation deploy --template-file templates/stack.yaml --stack-name $(CFN_STACK_NAME)
-endif
-endif
-endif
+deploy: build
+	@echo "Attempting to deploy compiled cloudformation..."
+	@aws $(profile) cloudformation deploy --template-file templates/packaged.yaml --stack-name $(lambdastackname) --parameter-overrides $(parameteroverrides) --capabilities CAPABILITY_NAMED_IAM
+	@aws $(profile) cloudformation deploy --template-file templates/stack.yaml --stack-name $(cfnstackname) --parameter-overrides $(parameteroverrides)
 
 destroy-stack:
-ifdef AWS_DEFAULT_PROFILE
-ifdef CFN_STACK_NAME
-ifdef LAMBDA_STACK_NAME
-	@echo "Attempting to destroy stack in $(AWS_DEFAULT_PROFILE)..."
-	@aws --profile $(AWS_DEFAULT_PROFILE) cloudformation delete-stack --stack-name $(CFN_STACK_NAME)
-	@echo "Waiting for $(CFN_STACK_NAME) to be deleted..."
-	@aws --profile $(AWS_DEFAULT_PROFILE) cloudformation wait stack-delete-complete --stack-name $(CFN_STACK_NAME)
-	@aws --profile $(AWS_DEFAULT_PROFILE) cloudformation delete-stack --stack-name $(LAMBDA_STACK_NAME)
-	@echo "Waiting for $(LAMBDA_STACK_NAME) to be deleted..."
-	@aws --profile $(AWS_DEFAULT_PROFILE) cloudformation wait stack-delete-complete --stack-name $(LAMBDA_STACK_NAME)
-else
-	@echo 'Attempting to destroy stack in AWS account...'
-	@aws cloudformation delete-stack --stack-name $(CFN_STACK_NAME)
-	@echo "Waiting for $(CFN_STACK_NAME) to be deleted..."
-	@aws cloudformation wait stack-delete-complete --stack-name $(CFN_STACK_NAME)
-	@aws cloudformation delete-stack --stack-name $(LAMBDA_STACK_NAME)
-	@echo "Waiting for $(LAMBDA_STACK_NAME) to be deleted..."
-	@aws cloudformation wait stack-delete-complete --stack-name $(LAMBDA_STACK_NAME)
-endif
-endif
-endif
+	@echo "Attempting to destroy stack..."
+	@aws $(profile) cloudformation delete-stack --stack-name $(cfnstackname)
+	@echo "Waiting for $(cfnstackname) to be deleted..."
+	@aws $(profile) cloudformation wait stack-delete-complete --stack-name $(cfnstackname)
+	@aws $(profile) cloudformation delete-stack --stack-name $(lambdastackname)
+	@echo "Waiting for $(lambdastackname) to be deleted..."
+	@aws $(profile) cloudformation wait stack-delete-complete --stack-name $(lambdastackname)
