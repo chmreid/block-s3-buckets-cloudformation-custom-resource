@@ -80,7 +80,7 @@ Resources:
             Role: !GetAtt RoleS3Control.Arn
 
 Outputs:
-  BlockPublicS3BucketsFunction:
-    Value: !GetAtt "BlockPublicS3BucketsFunction.Arn"
-    Export:
-      Name: !Ref CustomFunctionOutputKeyName
+    BlockPublicS3BucketsFunction:
+        Value: !GetAtt BlockPublicS3BucketsFunction.Arn
+        Export:
+            Name: !Ref CustomFunctionOutputKeyName
