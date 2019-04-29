@@ -1,29 +1,34 @@
 import os
 import boto3
-from cfn_lambda_handler import Handler
+from crhelper import CfnResource
 
-client = boto3.client('s3control')
-handler = Handler()
+helper = CfnResource(json_logging=False, log_level='INFO', boto_level='CRITICAL')
 
-@handler.create
-@handler.update
-def handle(event, context):
+@helper.create
+def create(event, context):
+    client = boto3.client('s3control')
     client.put_public_access_block(
-        AccountId=os.environ['ACCOUNT_ID'],
         PublicAccessBlockConfiguration={
-            'BlockPublicAcls': True,
-            'IgnorePublicAcls': True,
-            'BlockPublicPolicy': True,
-            'RestrictPublicBuckets': True
-        }
-    )
-
-    return { "Status": "SUCCESS" }
-
-@handler.delete
-def handle_delete(event, context):
-    client.delete_public_access_block(
+            "BlockPublicAcls": bool(os.environ['BPA'] == 'true'),
+            "IgnorePublicAcls": bool(os.environ['IPA'] == 'true'),
+            "BlockPublicPolicy": bool(os.environ['BPP'] == 'true'),
+            "RestrictPublicBuckets": bool(os.environ['RPB'] == 'true')
+        },
         AccountId=os.environ['ACCOUNT_ID']
     )
 
-    return { "Status": "SUCCESS" }
+@helper.delete
+def delete(event, context):
+    client = boto3.client('s3control')
+    client.put_public_access_block(
+        PublicAccessBlockConfiguration={
+            "BlockPublicAcls": not bool(os.environ['BPA'] == 'true'),
+            "IgnorePublicAcls": not bool(os.environ['IPA'] == 'true'),
+            "BlockPublicPolicy": not bool(os.environ['BPP'] == 'true'),
+            "RestrictPublicBuckets": not bool(os.environ['RPB'] == 'true')
+        },
+        AccountId=os.environ['ACCOUNT_ID']
+    )
+
+def handler(event, context):
+    helper(event, context)

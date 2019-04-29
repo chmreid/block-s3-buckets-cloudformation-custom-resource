@@ -1,27 +1,94 @@
+AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
+Description: >-
+    This template effectively defines the lambda to be used by in applying the
+    public S3 blocking permissions.
+
+Parameters:
+    BlockPublicAcls:
+        Type: String
+        AllowedValues:
+            - True
+            - False
+    IgnorePublicAcls:
+        Type: String
+        AllowedValues:
+            - True
+            - False
+    BlockPublicPolicy:
+        Type: String
+        AllowedValues:
+            - True
+            - False
+    RestrictPublicBuckets:
+        Type: String
+        AllowedValues:
+            - True
+            - False
+    S3ControlPolicyName:
+        Type: String
+    S3ControlRoleName:
+        Type: String
+    S3ControlRolePath:
+        Type: String
+    CustomFunctionOutputKeyName:
+        Type: String
 
 Resources:
-  BlockPublicS3BucketsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../pkg/
-      Handler: publicbuckets.handler
-      Runtime: python3.6
-      Timeout: 5
-      Environment:
-        Variables:
-          ACCOUNT_ID: !Ref AWS::AccountId
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - s3:GetAccountPublicAccessBlock
-                - s3:PutAccountPublicAccessBlock
-              Resource: "*"
+    RoleS3Control:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Ref S3ControlRoleName
+            AssumeRolePolicyDocument:
+                Version: 2012-10-17
+                Statement:
+                    -
+                        Effect: Allow
+                        Principal:
+                            Service:
+                                - lambda.amazonaws.com
+                        Action:
+                            - sts:AssumeRole
+            Path: !Ref S3ControlRolePath
+            Policies:
+                -
+                    PolicyName: !Ref S3ControlPolicyName
+                    PolicyDocument:
+                        Version: 2012-10-17
+                        Statement:
+                            -
+                                Effect: Allow
+                                Action:
+                                    - s3:GetAccountPublicAccessBlock
+                                    - s3:PutAccountPublicAccessBlock
+                                Resource: "*"
+                            -
+                                Effect: Allow
+                                Action: kms:Decrypt
+                                Resource: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/lambda'
+
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+    BlockPublicS3BucketsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: ../pkg/
+            Handler: publicbuckets.handler
+            Runtime: python3.7
+            Timeout: 30
+            Environment:
+                Variables:
+                    ACCOUNT_ID: !Ref AWS::AccountId
+                    BPA: !Ref BlockPublicAcls
+                    IPA: !Ref IgnorePublicAcls
+                    BPP: !Ref BlockPublicPolicy
+                    RPB: !Ref RestrictPublicBuckets
+            Role: !GetAtt RoleS3Control.Arn
+        DependsOn: RoleS3Control
 
 Outputs:
-  BlockPublicS3BucketsFunction:
-    Value: !GetAtt "BlockPublicS3BucketsFunction.Arn"
-    Export:
-      Name: "custom-resource-block-public-s3-buckets"
+    BlockPublicS3BucketsFunction:
+        Value: !GetAtt BlockPublicS3BucketsFunction.Arn
+        Export:
+            Name: !Ref CustomFunctionOutputKeyName
