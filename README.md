@@ -14,35 +14,44 @@ Note that this custom resource enables all features for blocking the creation of
 ## Usage
 
 The project includes a Makefile to automate the build, and deployment of the necessary resources to the target AWS account using CloudFormation.
-Before running make, set the following three variables, either in the environment, or by passing them to the make executable using environment overrides
+Before running make, set the following variable, either in the environment, or by passing it to the make executable using environment overrides
+* AWS_DEFAULT_PROFILE
 * S3_BUCKET
-* LAMBDA_STACK_NAME
-* CFN_STACK_NAME
 
-AWS_DEFAULT_PROFILE is optional, as its intent is to support those who have more than one AWS account
+The following variables are optional, and are pre-defined within the Makefile.
+* CFN_STACK_NAME
+* CUSTOM_FUNCTION_OUTPUT_KEY_NAME
+* LAMBDA_STACK_NAME
+* S3_CONTROL_POLICY_NAME
+* S3_CONTROL_ROLE_NAME
+* S3_CONTROL_ROLE_PATH
+
+The following variables are set to True by default, but can be adjusted based on your need. Reference for each of the options, and their effect is in [this](https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html#access-control-block-public-access-options) AWS documentation.
+* BLOCK_PUBLIC_ACLS
+* BLOCK_PUBLIC_POLICY
+* IGNORE_PUBLIC_ACLS
+* RESTRICT_PUBLIC_BUCKETS
 
 Once you decided how you are going to pass the environment variables to Make, running ```make``` without any targets will build, and deploy the stack to your account
 
 ### Examples:
 ```bash
 export S3_BUCKET=my_bucket
-export LAMBDA_STACK_NAME=lambda-blockpublicbuckets
-export CFN_STACK_NAME=policy-blockpublicbuckets
 export AWS_DEFAULT_PROFILE=123456789012
 make
 ```
 **or**
 ```bash
 make \
--e AWS_DEFAULT_PROFILE=123456789012 \
 -e S3_BUCKET=my_bucket \
--e LAMBDA_STACK_NAME=lambda-blockpublicbuckets \
--e CFN_STACK_NAME=policy-blockpublicbuckets
+-e AWS_DEFAULT_PROFILE=123456789012
 ```
 
 ## Options
 The Makefile provides the following targets:
-* **clean** - Purges the build directory, cached packages, and compiled templates
-* **build** - Caches packages, compiles the template, and uploads to the target S3 bucket
+* **distclean** - Reverts the project directory to its original state
+* **clean** - Removes the lambda source from the staging area, and deletes the compiled template
+* **prereqs** - Uses pipenv to pull the required libraries for the Lambda function into pkg/
+* **build** - Compiles the template, and uploads to the target S3 bucket
 * **deploy** - Deploys the compiled CloudFormation templates, and executes the templates containing the lambda function in the account
 * **destroy-stack** - Deletes the two active stacks from the account, reversing the policy defined by the lambda function
