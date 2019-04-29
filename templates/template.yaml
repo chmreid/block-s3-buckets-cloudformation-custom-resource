@@ -5,14 +5,6 @@ Description: >-
     public S3 blocking permissions.
 
 Parameters:
-    S3ControlPolicyName:
-        Type: String
-    S3ControlRoleName:
-        Type: String
-    S3ControlRolePath:
-        Type: String
-    CustomFunctionOutputKeyName:
-        Type: String
     BlockPublicAcls:
         Type: String
         AllowedValues:
@@ -33,6 +25,14 @@ Parameters:
         AllowedValues:
             - True
             - False
+    S3ControlPolicyName:
+        Type: String
+    S3ControlRoleName:
+        Type: String
+    S3ControlRolePath:
+        Type: String
+    CustomFunctionOutputKeyName:
+        Type: String
 
 Resources:
     RoleS3Control:
