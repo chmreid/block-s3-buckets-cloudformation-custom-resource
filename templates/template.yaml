@@ -85,6 +85,7 @@ Resources:
                     BPP: !Ref BlockPublicPolicy
                     RPB: !Ref RestrictPublicBuckets
             Role: !GetAtt RoleS3Control.Arn
+        DependsOn: RoleS3Control
 
 Outputs:
     BlockPublicS3BucketsFunction:
