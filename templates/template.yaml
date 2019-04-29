@@ -75,8 +75,8 @@ Resources:
         Properties:
             CodeUri: ../pkg/
             Handler: publicbuckets.handler
-            Runtime: python3.6
-            Timeout: 5
+            Runtime: python3.7
+            Timeout: 30
             Environment:
                 Variables:
                     ACCOUNT_ID: !Ref AWS::AccountId
