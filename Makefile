@@ -61,7 +61,7 @@ parameteroverrides = 'S3ControlPolicyName=$(s3controlpolicyname)' \
 	'RPB=$(rpb)'
 
 all: deploy
-.PHONY: distclean clean prereqs package build test deploy destroy-stack update-policy update-resource
+.PHONY: distclean clean prereqs package build test deploy destroy-stack update update-policy update-resource
 
 distclean: clean
 	-rm -rf requirements.txt Pipfile.lock pkg/
@@ -72,6 +72,7 @@ clean:
 prereqs: requirements.txt
 package: pkg/publicbuckets.py
 build: templates/packaged.yaml
+update: update-resource update-policy
 
 requirements.txt:
 	@echo 'Building requirements list...'
