@@ -55,10 +55,10 @@ parameteroverrides = 'S3ControlPolicyName=$(s3controlpolicyname)' \
 	'S3ControlRoleName=$(s3controlrolename)' \
 	'S3ControlRolePath=$(s3controlrolepath)' \
 	'CustomFunctionOutputKeyName=$(customfunctionoutputkeyname)' \
-	'BlockPublicAcls=$(bpa)' \
-	'IgnorePublicAcls=$(ipa)' \
-	'BlockPublicPolicy=$(bpp)' \
-	'RestrictPublicBuckets=$(rpb)'
+	'BPA=$(bpa)' \
+	'IPA=$(ipa)' \
+	'BPP=$(bpp)' \
+	'RPB=$(rpb)'
 
 all: deploy
 .PHONY: distclean clean prereqs package build test deploy destroy-stack

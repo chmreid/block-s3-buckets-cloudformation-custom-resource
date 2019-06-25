@@ -1,15 +1,40 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-    This template will use the lambda custom function to apply the S3 public
-    bucket controls to an account.
+  This template will use the lambda custom function to apply the S3 public
+  bucket controls to an account.
 
 Parameters:
-    CustomFunctionOutputKeyName:
-        Type: String
+  CustomFunctionOutputKeyName:
+    Type: String
+  BPA:
+    Type: String
+    AllowedValues:
+      - True
+      - False
+  IPA:
+    Type: String
+    AllowedValues:
+      - True
+      - False
+  BPP:
+    Type: String
+    AllowedValues:
+      - True
+      - False
+  RPB:
+    Type: String
+    AllowedValues:
+      - True
+      - False
 
 Resources:
-    BlockPublicS3Buckets:
-        Type: Custom::BlockPublicS3Buckets
-        Properties:
-            ServiceToken:
-                Fn::ImportValue: !Ref CustomFunctionOutputKeyName
+  BlockPublicS3Buckets:
+    Type: Custom::BlockPublicS3Buckets
+    Properties:
+      ServiceToken:
+        Fn::ImportValue: !Ref CustomFunctionOutputKeyName
+      AccountId: !Ref AWS::AccountId
+      BlockPublicAcls: !Ref BPA
+      IgnorePublicAcls: !Ref IPA
+      BlockPublicPolicy: !Ref BPP
+      RestrictPublicBuckets: !Ref RPB
