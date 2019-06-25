@@ -1,7 +1,9 @@
 import os
+import logging
 import boto3
 from crhelper import CfnResource
 
+logger = logging.getLogger(__name__)
 helper = CfnResource(json_logging=False, log_level='INFO', boto_level='CRITICAL')
 
 @helper.update
