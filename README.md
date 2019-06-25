@@ -54,4 +54,5 @@ The Makefile provides the following targets:
 * **prereqs** - Uses pipenv to pull the required libraries for the Lambda function into pkg/
 * **build** - Compiles the template, and uploads to the target S3 bucket
 * **deploy** - Deploys the compiled CloudFormation templates, and executes the templates containing the lambda function in the account
+* **update** - Updates the lambda code for the custom resource, as well as the policy
 * **destroy-stack** - Deletes the two active stacks from the account, reversing the policy defined by the lambda function
