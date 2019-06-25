@@ -61,7 +61,7 @@ parameteroverrides = 'S3ControlPolicyName=$(s3controlpolicyname)' \
 	'RPB=$(rpb)'
 
 all: deploy
-.PHONY: distclean clean prereqs package build test deploy destroy-stack
+.PHONY: distclean clean prereqs package build test deploy destroy-stack update-policy update-resource
 
 distclean: clean
 	-rm -rf requirements.txt Pipfile.lock pkg/
@@ -114,6 +114,22 @@ deploy: build
 	@aws $(profile) cloudformation update-termination-protection \
 	--enable-termination-protection \
 	--stack-name $(lambdastackname)
+
+update-resource: clean build
+	@echo "Attempting to update resources for custom lambda..."
+	@aws $(profile) cloudformation deploy \
+	--template-file templates/packaged.yaml \
+	--stack-name $(lambdastackname) \
+	--parameter-overrides $(parameteroverrides) \
+	--capabilities CAPABILITY_NAMED_IAM
+
+update-policy:
+	@echo "Attempting to update S3 public bucket policy..."
+	@aws $(profile) cloudformation deploy --template-file templates/stack.yaml \
+	--stack-name $(cfnstackname) --parameter-overrides $(parameteroverrides)
+	@echo "Waiting for $(cfnstackname) to be complete..."
+	@aws $(profile) cloudformation wait stack-update-complete \
+	--stack-name $(cfnstackname)
 
 destroy-stack:
 	@echo "Removing termination protection..."
